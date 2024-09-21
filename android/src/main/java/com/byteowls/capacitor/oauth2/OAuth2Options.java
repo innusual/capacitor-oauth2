@@ -221,4 +221,8 @@ public class OAuth2Options {
     public String getLogoutUrl() {
         return logoutUrl;
     }
+
+    public void setLogoutUrl(String logoutUrl) {
+        this.logoutUrl = logoutUrl;
+    }
 }

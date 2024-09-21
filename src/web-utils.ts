@@ -56,6 +56,12 @@ export class WebUtils {
         return body;
     }
 
+    static getLogoutUrl(options: WebOptions, id_token?: string): string {
+        let url = options.logoutUrl + "?post_logout_redirect_uri=" + options.redirectUrl;
+        url += "&id_token_hint=" + id_token;
+        return encodeURI(url);
+    }
+
     /**
      * Public only for testing
      */
@@ -169,6 +175,7 @@ export class WebUtils {
             }
         }
         webOptions.logsEnabled = this.getOverwritableValue(configOptions, "logsEnabled");
+        webOptions.logoutUrl = this.getOverwritableValue(configOptions, "logoutUrl");
 
         return webOptions;
     }
@@ -255,6 +262,7 @@ export class WebOptions {
     logsEnabled: boolean;
     windowOptions: string;
     windowTarget: string = "_blank";
+    logoutUrl: string;
 
     pkceEnabled: boolean;
     pkceCodeVerifier: string;

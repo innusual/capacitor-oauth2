@@ -326,13 +326,14 @@ public class OAuth2ClientPlugin extends Plugin {
                 accessTokenUri = authorizationUri;
             }
             Uri logoutUri = Uri.parse(oauth2Options.getLogoutUrl());
+            Uri redirectUri = Uri.parse(oauth2Options.getRedirectUrl());
 
-            AuthorizationServiceConfiguration config = new AuthorizationServiceConfiguration(authorizationUri, accessTokenUri);
+            AuthorizationServiceConfiguration config = new AuthorizationServiceConfiguration(authorizationUri, accessTokenUri, null, logoutUri);
 
             EndSessionRequest endSessionRequest =
                 new EndSessionRequest.Builder(config)
                     .setIdTokenHint(idToken)
-                    .setPostLogoutRedirectUri(logoutUri)
+                    .setPostLogoutRedirectUri(redirectUri)
                     .build();
 
             this.authService = new AuthorizationService(getContext());
@@ -531,6 +532,7 @@ public class OAuth2ClientPlugin extends Plugin {
             }
         }
         o.setAdditionalResourceHeaders(ConfigUtils.getOverwrittenAndroidParamMap(callData, PARAM_ADDITIONAL_RESOURCE_HEADERS));
+        o.setLogoutUrl(ConfigUtils.getParamString(callData, PARAM_LOGOUT_URL));
         // android only
         o.setCustomHandlerClass(ConfigUtils.trimToNull(ConfigUtils.getParamString(callData, PARAM_ANDROID_CUSTOM_HANDLER_CLASS)));
         o.setHandleResultOnNewIntent(ConfigUtils.getParam(Boolean.class, callData, PARAM_ANDROID_HANDLE_RESULT_ON_NEW_INTENT, false));

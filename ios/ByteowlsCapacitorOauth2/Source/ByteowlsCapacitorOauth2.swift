@@ -1,5 +1,6 @@
 import Foundation
 import Capacitor
+import SafariServices
 import OAuthSwift
 import CommonCrypto
 import AuthenticationServices
@@ -316,6 +317,32 @@ public class OAuth2ClientPlugin: CAPPlugin {
         }
     }
 
+    func showLogoutURL(_ call: CAPPluginCall) {
+        let redirectUri = getOverwritableString(call, PARAM_REDIRECT_URL) ?? ""
+        var logoutUrl = getOverwritableString(call, PARAM_LOGOUT_URL) ?? ""
+        logoutUrl += "?post_logout_redirect_uri=" + redirectUri
+
+        if let url = URL(string: logoutUrl) {
+            let config = SFSafariViewController.Configuration()
+            config.entersReaderIfAvailable = true
+            
+            let vc = SFSafariViewController(url: url, configuration: config)
+            vc.delegate = self.oauth2SafariDelegate
+            
+            DispatchQueue.main.async {
+                if var topController = UIApplication.shared.keyWindow?.rootViewController {
+                    while let presentedViewController = topController.presentedViewController {
+                        topController = presentedViewController
+                    }
+                    
+                    topController.present(vc, animated: true, completion: nil)
+                    vc.dismiss(animated: true)
+                }
+            }
+            
+        }
+    }
+
     /*
      * Plugin function to refresh tokens
      */
@@ -335,6 +362,7 @@ public class OAuth2ClientPlugin: CAPPlugin {
             }
         } else {
             if self.oauthSwift != nil {
+                showLogoutURL(call)
                 self.oauthSwift = nil
             }
             call.resolve()

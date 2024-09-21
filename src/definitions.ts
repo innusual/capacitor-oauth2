@@ -106,6 +106,8 @@ export interface OAuth2AuthenticateBaseOptions {
      * @since 3.0.0
      */
     additionalResourceHeaders?: { [key: string]: string }
+
+    id_token?: string;
 }
 
 export interface OAuth2AuthenticateOptions extends OAuth2AuthenticateBaseOptions {

@@ -208,9 +208,62 @@ export class OAuth2ClientPluginWeb extends WebPlugin implements OAuth2ClientPlug
     }
 
     async logout(options: OAuth2AuthenticateOptions): Promise<boolean> {
-        return new Promise<any>((resolve, _reject) => {
-            localStorage.removeItem(WebUtils.getAppId(options));
-            resolve(true);
+        const windowOptions = WebUtils.buildWindowOptions(options);
+
+        // we open the window first to avoid popups being blocked because of
+        // the asynchronous buildWebOptions call
+        this.windowHandle = window.open(
+            '',
+            windowOptions.windowTarget,
+            windowOptions.windowOptions
+        );
+
+        this.webOptions = await WebUtils.buildWebOptions(options);
+        return new Promise<any>((resolve, reject) => {
+            // validate
+            if (!this.webOptions.logoutUrl || this.webOptions.logoutUrl.length == 0) {
+                reject(new Error("ERR_PARAM_NO_LOGOUT_URL"));
+            }
+            else if (!this.webOptions.redirectUrl || this.webOptions.redirectUrl.length == 0) {
+                reject(new Error("ERR_PARAM_NO_REDIRECT_URL"));
+            } else {
+                // init internal control params
+                let loopCount = this.loopCount;
+                this.windowClosedByPlugin = false;
+                // open window
+                const logoutUrl = WebUtils.getLogoutUrl(this.webOptions, options.id_token);
+                if (this.webOptions.logsEnabled) {
+                    this.doLog("Logout url: " + logoutUrl);
+                }
+                if (this.windowHandle) {
+                    this.windowHandle.location.href = logoutUrl;
+                }
+                // wait for redirect and resolve the
+                this.intervalId = window.setInterval(() => {
+                    if (loopCount-- < 0) {
+                        this.closeWindow();
+                    } else if (this.windowHandle?.closed && !this.windowClosedByPlugin) {
+                        window.clearInterval(this.intervalId);
+                        reject(new Error("USER_CANCELLED"));
+                    } else {
+                        let href: string = undefined!;
+                        try {
+                            href = this.windowHandle?.location.href!;
+                        } catch (ignore) {
+                            // ignore DOMException: Blocked a frame with origin "http://localhost:4200" from accessing a cross-origin frame.
+                        }
+                        if (href != null && href.indexOf(this.webOptions.redirectUrl) >= 0) {
+                            if (this.webOptions.logsEnabled) {
+                                this.doLog("Url from Provider: " + href);
+                            }
+                            window.clearInterval(this.intervalId);
+                            localStorage.removeItem(WebUtils.getAppId(options));
+                            this.closeWindow();
+                            resolve(href);
+                        }
+                    }
+                }, this.intervalLength);
+            }
         });
     }
 
